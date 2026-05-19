@@ -1,4 +1,4 @@
-const CACHE_NAME = 'lumberboom-v3'; // Bumped version
+const CACHE_NAME = 'lumberboom-v4';
 const ASSETS = [
     './',
     './index.html',
@@ -6,7 +6,7 @@ const ASSETS = [
     './style.css',
     './game.js',
     './manifest.json',
-    './logo.png'
+    './logo.svg'
 ];
 
 self.addEventListener('install', event => {
