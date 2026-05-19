@@ -2,7 +2,6 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <!-- iOS & Mobile Optimization -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -15,19 +14,16 @@
 <body>
     <!-- Main Menu -->
     <div id="menu-screen" class="screen">
-        <!-- Update Banner -->
         <div id="update-banner" class="hidden update-banner" onclick="applyUpdate()">
             New Update Available! Tap to Install & Restart.
         </div>
 
-        <!-- Updated to logo.svg -->
         <img src="logo.svg" alt="LumberBoom Logo" class="logo" onerror="this.style.display='none'">
         <h1>LumberBoom</h1>
         
         <button onclick="startGame('classic')">Classic Mode</button>
         <button onclick="startGame('bomb')" class="bomb-btn">Bomb Mode</button>
         
-        <!-- Utility Buttons -->
         <div class="menu-row">
             <button onclick="showScreen('license-screen')" class="small-btn">License Info</button>
             <button onclick="checkForUpdates()" class="small-btn">Check Updates</button>
@@ -41,20 +37,23 @@
     <!-- Gameplay Screen -->
     <div id="game-screen" class="screen hidden">
         <div class="header">
-            <div class="score-board">Score: <span id="score">0</span></div>
+            <div class="scores">
+                <div class="score-board">Score: <span id="score">0</span></div>
+                <div class="high-score-board">Best: <span id="high-score">0</span></div>
+            </div>
             <button onclick="showScreen('menu-screen')">Menu</button>
         </div>
         <div id="board" class="board"></div>
-        <div class="instructions">Tap a piece, then tap the board to place.</div>
+        <div class="instructions">Drag and drop blocks onto the board.</div>
         <div id="tray" class="tray"></div>
     </div>
 
     <!-- Game Over Screen -->
     <div id="game-over-screen" class="screen hidden">
-        <!-- Updated to logo.svg -->
         <img src="logo.svg" alt="LumberBoom Logo" class="logo" onerror="this.style.display='none'">
         <h1>Game Over!</h1>
         <p>Final Score: <span id="final-score">0</span></p>
+        <p>Best Score: <span id="final-best-score">0</span></p>
         <button onclick="showScreen('menu-screen')">Main Menu</button>
     </div>
 
@@ -73,9 +72,7 @@
 
     <script src="game.js"></script>
     <script>
-        // UPDATE CHECKER LOGIC
         let newWorker;
-
         if ('serviceWorker' in navigator) {
             navigator.serviceWorker.register('sw.js').then(registration => {
                 registration.addEventListener('updatefound', () => {
@@ -87,8 +84,6 @@
                     });
                 });
             });
-
-            // Ensure reload happens when the new worker takes over
             let refreshing;
             navigator.serviceWorker.addEventListener('controllerchange', () => {
                 if (refreshing) return;
@@ -96,27 +91,14 @@
                 refreshing = true;
             });
         }
-
         function checkForUpdates() {
             if ('serviceWorker' in navigator) {
                 navigator.serviceWorker.getRegistration().then(reg => {
-                    if (reg) {
-                        reg.update();
-                        alert("Checking for updates... If an update is found, a banner will appear.");
-                    } else {
-                        alert("App is running without an offline cache.");
-                    }
+                    if (reg) { reg.update(); alert("Checking for updates..."); }
                 });
-            } else {
-                alert("Your browser doesn't support offline updates.");
             }
         }
-
-        function applyUpdate() {
-            if (newWorker) {
-                newWorker.postMessage({ action: 'skipWaiting' });
-            }
-        }
+        function applyUpdate() { if (newWorker) newWorker.postMessage({ action: 'skipWaiting' }); }
     </script>
 </body>
 </html>
