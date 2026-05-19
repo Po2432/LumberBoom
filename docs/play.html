@@ -2,6 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <!-- iOS & Mobile Optimization -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -14,11 +15,13 @@
 <body>
     <!-- Main Menu -->
     <div id="menu-screen" class="screen">
+        <!-- Update Banner -->
         <div id="update-banner" class="hidden update-banner" onclick="applyUpdate()">
             New Update Available! Tap to Install & Restart.
         </div>
 
-        <img src="logo.png" alt="LumberBoom Logo" class="logo" onerror="this.style.display='none'">
+        <!-- Updated to logo.svg -->
+        <img src="logo.svg" alt="LumberBoom Logo" class="logo" onerror="this.style.display='none'">
         <h1>LumberBoom</h1>
         
         <button onclick="startGame('classic')">Classic Mode</button>
@@ -48,7 +51,8 @@
 
     <!-- Game Over Screen -->
     <div id="game-over-screen" class="screen hidden">
-        <img src="logo.png" alt="LumberBoom Logo" class="logo" onerror="this.style.display='none'">
+        <!-- Updated to logo.svg -->
+        <img src="logo.svg" alt="LumberBoom Logo" class="logo" onerror="this.style.display='none'">
         <h1>Game Over!</h1>
         <p>Final Score: <span id="final-score">0</span></p>
         <button onclick="showScreen('menu-screen')">Main Menu</button>
