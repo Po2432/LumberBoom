@@ -32,13 +32,6 @@ LumberBoom is a responsive, web-based, wood block puzzle game featuring a classi
 2. Look at the right side of the URL/address bar. You will see an icon that looks like a monitor with a downward arrow (or a "+" symbol).
 3. Click it and select **Install**.
 
-## Setup Instructions (GitHub Pages)
-1. Upload all files from this repository directly to the `main` root folder.
-2. Ensure you have added your own `logo.png` image file to the root folder.
-3. Go to **Settings > Pages** in your GitHub repository.
-4. Set the Source to `Deploy from a branch`.
-5. Select the `main` branch and `/ (root)` folder.
-6. Click Save and navigate to the generated link!
 
 ## License
 See [LICENSE.md](./LICENSE.md) for usage rights.
