@@ -11,9 +11,16 @@
     <link rel="manifest" href="manifest.json">
     <link rel="stylesheet" href="style.css">
 </head>
-<body>
+<body oncontextmenu="return false;" onselectstart="return false;" ondragstart="return false;">
+    
+    <!-- Loading Screen -->
+    <div id="loading-screen" class="screen">
+        <img src="logo.svg" alt="LumberBoom Logo" class="logo loading-logo" onerror="this.style.display='none'">
+        <h1 class="loading-text">Loading...</h1>
+    </div>
+
     <!-- Main Menu -->
-    <div id="menu-screen" class="screen">
+    <div id="menu-screen" class="screen hidden">
         <div id="update-banner" class="hidden update-banner" onclick="applyUpdate()">
             New Update Available! Tap to Install & Restart.
         </div>
@@ -44,7 +51,7 @@
             <button onclick="showScreen('menu-screen')">Menu</button>
         </div>
         <div id="board" class="board"></div>
-        <div class="instructions">Drag and drop blocks onto the board.</div>
+        <div class="instructions">Drag to place. Tap to rotate.</div>
         <div id="tray" class="tray"></div>
     </div>
 
