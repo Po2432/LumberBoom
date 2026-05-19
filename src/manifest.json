@@ -1,0 +1,17 @@
+{
+  "name": "LumberBoom Block Puzzle",
+  "short_name": "LumberBoom",
+  "description": "A wood block puzzle game with bomb mode.",
+  "start_url": "./play.html",
+  "display": "standalone",
+  "background_color": "#2c1e16",
+  "theme_color": "#8b5a2b",
+  "icons": [
+    {
+      "src": "logo.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
