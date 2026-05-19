@@ -35,10 +35,6 @@
             <button onclick="showScreen('license-screen')" class="small-btn">License Info</button>
             <button onclick="checkForUpdates()" class="small-btn">Check Updates</button>
         </div>
-
-        <div class="credits">
-            &copy; 2026 Made by <a href="https://github.com/Po2432" target="_blank">Po2432</a>
-        </div>
     </div>
 
     <!-- Gameplay Screen -->
@@ -50,8 +46,39 @@
             </div>
             <button onclick="showScreen('menu-screen')">Menu</button>
         </div>
+        
+        <!-- BONUS TOOLBAR -->
+        <div id="bonus-bar" class="bonus-bar">
+            <!-- Remove -->
+            <div class="bonus-btn" id="btn-remove" onclick="toggleBonus('remove')">
+                <svg viewBox="0 0 24 24"><path fill="currentColor" d="M19,4H15.5L14.5,3H9.5L8.5,4H5V6H19M6,19A2,2 0 0,0 8,21H16A2,2 0 0,0 18,19V7H6V19Z"/></svg>
+                <span class="badge" id="badge-remove">1</span>
+            </div>
+            <!-- Move -->
+            <div class="bonus-btn" id="btn-move" onclick="toggleBonus('move')">
+                <svg viewBox="0 0 24 24"><path fill="currentColor" d="M18 11V8L22 12L18 16V13H13V18H16L12 22L8 18H11V13H6V16L2 12L6 8V11H11V6H8L12 2L16 6H13V11H18Z"/></svg>
+                <span class="badge" id="badge-move">1</span>
+            </div>
+            <!-- Reroll -->
+            <div class="bonus-btn" id="btn-reroll" onclick="useReroll()">
+                <svg viewBox="0 0 24 24"><path fill="currentColor" d="M12,18A6,6 0 0,1 6,12C6,11 6.25,10.03 6.7,9.2L5.24,7.74C4.46,8.97 4,10.43 4,12A8,8 0 0,0 12,20V23L16,19L12,15M12,4V1L8,5L12,9V6A6,6 0 0,1 18,12C18,13 17.75,13.97 17.3,14.8L18.76,16.26C19.54,15.03 20,13.57 20,12A8,8 0 0,0 12,4Z"/></svg>
+                <span class="badge" id="badge-reroll">1</span>
+            </div>
+            <!-- Hint -->
+            <div class="bonus-btn" id="btn-hint" onclick="useHint()">
+                <svg viewBox="0 0 24 24"><path fill="currentColor" d="M12,2A7,7 0 0,0 5,9C5,11.38 6.19,13.47 8,14.74V17A1,1 0 0,0 9,18H15A1,1 0 0,0 16,17V14.74C17.81,13.47 19,11.38 19,9A7,7 0 0,0 12,2M9,21A1,1 0 0,0 10,22H14A1,1 0 0,0 15,21V20H9V21Z"/></svg>
+                <span class="badge" id="badge-hint">1</span>
+            </div>
+            <!-- Defuse (Bomb Mode Only) -->
+            <div class="bonus-btn bomb-only" id="btn-defuse" onclick="toggleBonus('defuse')">
+                <svg viewBox="0 0 24 24"><path fill="currentColor" d="M17.58,4L14,7.59L16.41,10L20,6.41M5.41,20L19.41,6L18,4.59L4,18.59L5.41,20M11,17V21H13V17H11M11,10V14H13V10H11Z"/></svg>
+                <span class="badge" id="badge-defuse">1</span>
+            </div>
+        </div>
+        <div id="bonus-status" class="bonus-status hidden">Select a block on the board...</div>
+
         <div id="board" class="board"></div>
-        <div class="instructions">Drag to place. Tap to rotate.</div>
+        <div class="instructions">Drag to place. Tap tray to rotate.</div>
         <div id="tray" class="tray"></div>
     </div>
 
@@ -68,44 +95,15 @@
     <div id="license-screen" class="screen hidden">
         <h2>License Terms</h2>
         <div class="license-text">
-            <p>1. <strong>Attribution Required:</strong> You must credit Po2432.</p>
-            <p>2. <strong>Non-Commercial:</strong> You may not use this game for commercial purposes.</p>
-            <p>3. <strong>ShareAlike:</strong> Any modified code must be distributed under the exact same terms.</p>
-            <p>4. <strong>No Verbatim Redistribution:</strong> You may not redistribute this exact code without modifications.</p>
-            <p>5. <strong>Strict Asset Prohibition:</strong> Assets (including the logo) cannot be redistributed. You must completely remove all original assets before publishing a modified version.</p>
+            <p>1. <strong>Attribution:</strong> Credit according to this https://github.com/Po2432/LumberBoom?tab=License-1-ov-file.</p>
+            <p>2. <strong>Non-Commercial:</strong> No commercial use.</p>
+            <p>3. <strong>ShareAlike:</strong> Modified code shares this license.</p>
+            <p>4. <strong>No Verbatim Redistribution:</strong> Modification required.</p>
+            <p>5. <strong>Strict Asset Prohibition:</strong> Assets (logo, icons) cannot be redistributed. Remove all original assets before publishing a modified version.</p>
         </div>
         <button onclick="showScreen('menu-screen')">Back</button>
     </div>
 
     <script src="game.js"></script>
-    <script>
-        let newWorker;
-        if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.register('sw.js').then(registration => {
-                registration.addEventListener('updatefound', () => {
-                    newWorker = registration.installing;
-                    newWorker.addEventListener('statechange', () => {
-                        if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-                            document.getElementById('update-banner').classList.remove('hidden');
-                        }
-                    });
-                });
-            });
-            let refreshing;
-            navigator.serviceWorker.addEventListener('controllerchange', () => {
-                if (refreshing) return;
-                window.location.reload();
-                refreshing = true;
-            });
-        }
-        function checkForUpdates() {
-            if ('serviceWorker' in navigator) {
-                navigator.serviceWorker.getRegistration().then(reg => {
-                    if (reg) { reg.update(); alert("Checking for updates..."); }
-                });
-            }
-        }
-        function applyUpdate() { if (newWorker) newWorker.postMessage({ action: 'skipWaiting' }); }
-    </script>
 </body>
 </html>
