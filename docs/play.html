@@ -32,7 +32,7 @@
         <button onclick="startGame('bomb')" class="bomb-btn">Bomb Mode</button>
         
         <div class="menu-row">
-            <button onclick="showScreen('license-screen')" class="small-btn">License Info</button>
+            <button onclick="window.open('https://github.com/Po2432/LumberBoom?tab=License-1-ov-file', '_blank')" class="small-btn">License Info</button>
             <button onclick="checkForUpdates()" class="small-btn">Check Updates</button>
         </div>
     </div>
@@ -91,19 +91,35 @@
         <button onclick="showScreen('menu-screen')">Main Menu</button>
     </div>
 
-    <!-- License Screen -->
-    <div id="license-screen" class="screen hidden">
-        <h2>License Terms</h2>
-        <div class="license-text">
-            <p>1. <strong>Attribution:</strong> Credit according to this https://github.com/Po2432/LumberBoom?tab=License-1-ov-file.</p>
-            <p>2. <strong>Non-Commercial:</strong> No commercial use.</p>
-            <p>3. <strong>ShareAlike:</strong> Modified code shares this license.</p>
-            <p>4. <strong>No Verbatim Redistribution:</strong> Modification required.</p>
-            <p>5. <strong>Strict Asset Prohibition:</strong> Assets (logo, icons) cannot be redistributed. Remove all original assets before publishing a modified version.</p>
-        </div>
-        <button onclick="showScreen('menu-screen')">Back</button>
-    </div>
-
     <script src="game.js"></script>
+    <script>
+        let newWorker;
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('sw.js').then(registration => {
+                registration.addEventListener('updatefound', () => {
+                    newWorker = registration.installing;
+                    newWorker.addEventListener('statechange', () => {
+                        if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                            document.getElementById('update-banner').classList.remove('hidden');
+                        }
+                    });
+                });
+            });
+            let refreshing;
+            navigator.serviceWorker.addEventListener('controllerchange', () => {
+                if (refreshing) return;
+                window.location.reload();
+                refreshing = true;
+            });
+        }
+        function checkForUpdates() {
+            if ('serviceWorker' in navigator) {
+                navigator.serviceWorker.getRegistration().then(reg => {
+                    if (reg) { reg.update(); alert("Checking for updates..."); }
+                });
+            }
+        }
+        function applyUpdate() { if (newWorker) newWorker.postMessage({ action: 'skipWaiting' }); }
+    </script>
 </body>
 </html>
