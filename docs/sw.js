@@ -1,4 +1,4 @@
-const CACHE_NAME = 'lumberboom-v2';
+const CACHE_NAME = 'lumberboom-v3'; // Bumped version
 const ASSETS = [
     './',
     './index.html',
@@ -19,4 +19,11 @@ self.addEventListener('fetch', event => {
     event.respondWith(
         caches.match(event.request).then(response => response || fetch(event.request))
     );
+});
+
+// Listen for the "skipWaiting" message from the Update Banner to force an update
+self.addEventListener('message', event => {
+    if (event.data && event.data.action === 'skipWaiting') {
+        self.skipWaiting();
+    }
 });
