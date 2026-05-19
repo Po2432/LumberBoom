@@ -15,7 +15,7 @@ LumberBoom is a responsive, web-based, wood block puzzle game featuring a classi
 ## 📱 How to Install the PWA App
 
 **On iOS (iPhone / iPad):**
-1. Open the game link (`https://po2432.github.io/LumberBoom/play.html`) in **Safari**.
+1. Open the game [link](https://po2432.github.io/LumberBoom/play.html) in **Safari**.
 2. Tap the **Share icon** at the bottom of the screen (the square with the arrow pointing up).
 3. Scroll down the menu and tap **"Add to Home Screen"**.
 4. Confirm by tapping **"Add"** in the top right corner.
