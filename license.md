@@ -1,6 +1,6 @@
-# Custom License for LumberBoom
+# License for LumberBoom
 
-Copyright (c) 2023 Po2432 (https://github.com/Po2432)
+Copyright (c) 2026 Po2432 (https://github.com/Po2432)
 
 Permission to use and copy this software is granted under the following exact conditions:
 
