@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="LumberBoom">
+    
+    <title>LumberBoom Game</title>
+    <link rel="manifest" href="manifest.json">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <!-- Main Menu -->
+    <div id="menu-screen" class="screen">
+        <div id="update-banner" class="hidden update-banner" onclick="applyUpdate()">
+            New Update Available! Tap to Install & Restart.
+        </div>
+
+        <img src="logo.svg" alt="LumberBoom Logo" class="logo" onerror="this.style.display='none'">
+        <h1>LumberBoom</h1>
+        
+        <button onclick="startGame('classic')">Classic Mode</button>
+        <button onclick="startGame('bomb')" class="bomb-btn">Bomb Mode</button>
+        
+        <div class="menu-row">
+            <button onclick="showScreen('license-screen')" class="small-btn">License Info</button>
+            <button onclick="checkForUpdates()" class="small-btn">Check Updates</button>
+        </div>
+
+        <div class="credits">
+            &copy; 2026 Made by <a href="https://github.com/Po2432" target="_blank">Po2432</a>
+        </div>
+    </div>
+
+    <!-- Gameplay Screen -->
+    <div id="game-screen" class="screen hidden">
+        <div class="header">
+            <div class="scores">
+                <div class="score-board">Score: <span id="score">0</span></div>
+                <div class="high-score-board">Best: <span id="high-score">0</span></div>
+            </div>
+            <button onclick="showScreen('menu-screen')">Menu</button>
+        </div>
+        <div id="board" class="board"></div>
+        <div class="instructions">Drag and drop blocks onto the board.</div>
+        <div id="tray" class="tray"></div>
+    </div>
+
+    <!-- Game Over Screen -->
+    <div id="game-over-screen" class="screen hidden">
+        <img src="logo.svg" alt="LumberBoom Logo" class="logo" onerror="this.style.display='none'">
+        <h1>Game Over!</h1>
+        <p>Final Score: <span id="final-score">0</span></p>
+        <p>Best Score: <span id="final-best-score">0</span></p>
+        <button onclick="showScreen('menu-screen')">Main Menu</button>
+    </div>
+
+    <!-- License Screen -->
+    <div id="license-screen" class="screen hidden">
+        <h2>License Terms</h2>
+        <div class="license-text">
+            <p>1. <strong>Attribution Required:</strong> You must credit Po2432.</p>
+            <p>2. <strong>Non-Commercial:</strong> You may not use this game for commercial purposes.</p>
+            <p>3. <strong>ShareAlike:</strong> Any modified code must be distributed under the exact same terms.</p>
+            <p>4. <strong>No Verbatim Redistribution:</strong> You may not redistribute this exact code without modifications.</p>
+            <p>5. <strong>Strict Asset Prohibition:</strong> Assets (including the logo) cannot be redistributed. You must completely remove all original assets before publishing a modified version.</p>
+        </div>
+        <button onclick="showScreen('menu-screen')">Back</button>
+    </div>
+
+    <script src="game.js"></script>
+    <script>
+        let newWorker;
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('sw.js').then(registration => {
+                registration.addEventListener('updatefound', () => {
+                    newWorker = registration.installing;
+                    newWorker.addEventListener('statechange', () => {
+                        if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                            document.getElementById('update-banner').classList.remove('hidden');
+                        }
+                    });
+                });
+            });
+            let refreshing;
+            navigator.serviceWorker.addEventListener('controllerchange', () => {
+                if (refreshing) return;
+                window.location.reload();
+                refreshing = true;
+            });
+        }
+        function checkForUpdates() {
+            if ('serviceWorker' in navigator) {
+                navigator.serviceWorker.getRegistration().then(reg => {
+                    if (reg) { reg.update(); alert("Checking for updates..."); }
+                });
+            }
+        }
+        function applyUpdate() { if (newWorker) newWorker.postMessage({ action: 'skipWaiting' }); }
+    </script>
+</body>
+</html>
