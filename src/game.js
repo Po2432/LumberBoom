@@ -6,8 +6,10 @@ let gameMode = 'classic';
 let currentPieces = [];
 let moves = 0;
 
-// Drag variables
+// Drag / Tap variables
 let dragState = null;
+let pointerDownPos = { x: 0, y: 0 };
+let pointerDownTime = 0;
 
 const SHAPES = [
     [[1]], [[1,1]], [[1],[1]], [[1,1,1]], [[1],[1],[1]], [[1,1,1,1]], [[1],[1],[1],[1]],
@@ -17,16 +19,34 @@ const SHAPES = [
     [[1,0,0],[1,0,0],[1,1,1]], [[0,0,1],[0,0,1],[1,1,1]]
 ];
 
-// Initialize on load
 window.onload = () => {
+    // Load high scores
     highScores.classic = parseInt(localStorage.getItem('lumberboom_hs_classic')) || 0;
     highScores.bomb = parseInt(localStorage.getItem('lumberboom_hs_bomb')) || 0;
     
-    // Global Drag Listeners
-    window.addEventListener('pointermove', onPointerMove);
+    // Global Listeners
+    window.addEventListener('pointermove', onPointerMove, { passive: false });
     window.addEventListener('pointerup', onPointerUp);
     window.addEventListener('pointercancel', onPointerUp);
+
+    // Simulated Loading Screen
+    setTimeout(() => {
+        showScreen('menu-screen');
+    }, 1500);
 };
+
+// --- ROTATION LOGIC ---
+function rotateMatrix(matrix) {
+    const rows = matrix.length;
+    const cols = matrix[0].length;
+    let rotated = Array.from({ length: cols }, () => Array(rows).fill(0));
+    for (let r = 0; r < rows; r++) {
+        for (let c = 0; c < cols; c++) {
+            rotated[c][rows - 1 - r] = matrix[r][c];
+        }
+    }
+    return rotated;
+}
 
 function showScreen(screenId) {
     document.querySelectorAll('.screen').forEach(s => s.classList.add('hidden'));
@@ -83,15 +103,12 @@ function drawTray() {
         
         if(piece) {
             pieceEl.style.gridTemplateColumns = `repeat(${piece[0].length}, 1fr)`;
-            
-            // Allow pointer dragging
             pieceEl.addEventListener('pointerdown', (e) => onPointerDown(e, index));
             
             for(let r=0; r<piece.length; r++) {
                 for(let c=0; c<piece[0].length; c++) {
                     let cell = document.createElement('div');
                     cell.className = 'tray-cell ' + (piece[r][c] ? 'filled' : 'empty');
-                    // Store coordinates for accurate grab-offset tracking
                     cell.dataset.r = r;
                     cell.dataset.c = c;
                     pieceEl.appendChild(cell);
@@ -102,14 +119,17 @@ function drawTray() {
     });
 }
 
-// ---- DRAG AND DROP ENGINE ----
+// ---- TAP TO ROTATE & DRAG TO PLACE ----
 
 function onPointerDown(e, pieceIndex) {
     if (dragState) return;
     let piece = currentPieces[pieceIndex];
     if (!piece) return;
-    
-    // Find where the user grabbed the piece
+
+    pointerDownPos = { x: e.clientX, y: e.clientY };
+    pointerDownTime = Date.now();
+
+    // Determine Grab Offset (which block cell finger is on)
     let grabR = Math.floor(piece.length / 2);
     let grabC = Math.floor(piece[0].length / 2);
     if (e.target.dataset.r !== undefined) {
@@ -117,100 +137,118 @@ function onPointerDown(e, pieceIndex) {
         grabC = parseInt(e.target.dataset.c);
     }
 
-    // Hide original piece slightly
     let originalEl = document.getElementById('tray').children[pieceIndex];
-    originalEl.classList.add('dragging');
+    
+    dragState = {
+        index: pieceIndex,
+        piece: piece,
+        grabR: grabR,
+        grabC: grabC,
+        originalEl: originalEl,
+        ghost: null, // Created on Move
+        isDragging: false,
+        validX: null,
+        validY: null
+    };
+}
 
-    // Calculate ghost block sizes based on current actual board size
+function onPointerMove(e) {
+    if (!dragState) return;
+    
+    // Prevent default scrolling when dragging
+    if (dragState.isDragging) e.preventDefault();
+
+    // Check if it's a drag or just a tap
+    let dist = Math.hypot(e.clientX - pointerDownPos.x, e.clientY - pointerDownPos.y);
+    if (!dragState.isDragging && dist > 10) {
+        dragState.isDragging = true;
+        dragState.originalEl.classList.add('dragging');
+        createGhost();
+    }
+
+    if (dragState.isDragging && dragState.ghost) {
+        // We lift the target Y up by ~3 board cells so it sits visibly above the finger
+        let boardRect = document.getElementById('board').getBoundingClientRect();
+        let cellW = (boardRect.width - 20) / BOARD_SIZE;
+        
+        let targetX = e.clientX;
+        let targetY = e.clientY - (cellW * 3); 
+
+        // Position the ghost visually. 
+        // We shift it so the cell the user grabbed (`grabC`, `grabR`) is exactly at targetX, targetY.
+        dragState.ghost.style.left = (targetX - (dragState.grabC * cellW) - (cellW/2)) + 'px';
+        dragState.ghost.style.top = (targetY - (dragState.grabR * cellW) - (cellW/2)) + 'px';
+
+        // Calculate board hover coordinates
+        if (targetX >= boardRect.left && targetX <= boardRect.right &&
+            targetY >= boardRect.top && targetY <= boardRect.bottom) {
+            
+            let hoverC = Math.floor((targetX - boardRect.left) / cellW);
+            let hoverR = Math.floor((targetY - boardRect.top) / cellW);
+
+            let startX = hoverC - dragState.grabC;
+            let startY = hoverR - dragState.grabR;
+
+            clearHighlights();
+            if (canPlace(dragState.piece, startX, startY)) {
+                dragState.validX = startX;
+                dragState.validY = startY;
+                drawHighlights(dragState.piece, startX, startY);
+            } else {
+                dragState.validX = null;
+                dragState.validY = null;
+            }
+        } else {
+            clearHighlights();
+            dragState.validX = null;
+            dragState.validY = null;
+        }
+    }
+}
+
+function createGhost() {
     let boardRect = document.getElementById('board').getBoundingClientRect();
-    let cellW = (boardRect.width - 20) / BOARD_SIZE; // Rough padding math
+    let cellW = (boardRect.width - 20) / BOARD_SIZE; // Exact board cell width
 
-    // Create ghost piece
     let ghost = document.createElement('div');
     ghost.classList.add('ghost-piece');
-    ghost.style.gridTemplateColumns = `repeat(${piece[0].length}, ${cellW}px)`;
+    ghost.style.gridTemplateColumns = `repeat(${dragState.piece[0].length}, ${cellW}px)`;
     
-    for(let r=0; r<piece.length; r++) {
-        for(let c=0; c<piece[0].length; c++) {
+    for(let r=0; r<dragState.piece.length; r++) {
+        for(let c=0; c<dragState.piece[0].length; c++) {
             let gCell = document.createElement('div');
-            gCell.className = 'ghost-cell ' + (piece[r][c] ? 'filled' : 'empty');
+            gCell.className = 'ghost-cell ' + (dragState.piece[r][c] ? 'filled' : 'empty');
             gCell.style.width = `${cellW}px`;
             gCell.style.height = `${cellW}px`;
             ghost.appendChild(gCell);
         }
     }
     document.body.appendChild(ghost);
-
-    dragState = {
-        index: pieceIndex,
-        piece: piece,
-        grabR: grabR,
-        grabC: grabC,
-        ghost: ghost,
-        originalEl: originalEl,
-        validX: null,
-        validY: null
-    };
-    
-    moveGhost(e.clientX, e.clientY);
-}
-
-function onPointerMove(e) {
-    if (!dragState) return;
-    
-    // Move Ghost Piece (offsetting Y slightly up so finger doesn't hide it)
-    let touchY = e.clientY - 60;
-    moveGhost(e.clientX, touchY);
-
-    // Calculate grid hovering
-    let boardRect = document.getElementById('board').getBoundingClientRect();
-    let cellW = boardRect.width / BOARD_SIZE;
-    let cellH = boardRect.height / BOARD_SIZE;
-
-    if (e.clientX >= boardRect.left && e.clientX <= boardRect.right &&
-        touchY >= boardRect.top && touchY <= boardRect.bottom) {
-        
-        let hoverX = Math.floor((e.clientX - boardRect.left) / cellW);
-        let hoverY = Math.floor((touchY - boardRect.top) / cellH);
-
-        let startX = hoverX - dragState.grabC;
-        let startY = hoverY - dragState.grabR;
-
-        clearHighlights();
-        if (canPlace(dragState.piece, startX, startY)) {
-            dragState.validX = startX;
-            dragState.validY = startY;
-            drawHighlights(dragState.piece, startX, startY);
-        } else {
-            dragState.validX = null;
-            dragState.validY = null;
-        }
-    } else {
-        clearHighlights();
-        dragState.validX = null;
-        dragState.validY = null;
-    }
-}
-
-function moveGhost(x, y) {
-    if (dragState && dragState.ghost) {
-        dragState.ghost.style.left = x + 'px';
-        dragState.ghost.style.top = y + 'px';
-    }
+    dragState.ghost = ghost;
 }
 
 function onPointerUp(e) {
     if (!dragState) return;
 
-    // Remove ghost visuals
-    dragState.ghost.remove();
-    dragState.originalEl.classList.remove('dragging');
-    clearHighlights();
+    if (!dragState.isDragging) {
+        // It was a TAP -> Rotate
+        let timePassed = Date.now() - pointerDownTime;
+        if (timePassed < 300) {
+            currentPieces[dragState.index] = rotateMatrix(dragState.piece);
+            drawTray();
+            checkGameOver();
+        }
+    } else {
+        // It was a DRAG -> Attempt Place
+        if (dragState.ghost) dragState.ghost.remove();
+        dragState.originalEl.classList.remove('dragging');
+        clearHighlights();
 
-    // Valid Drop?
-    if (dragState.validX !== null && dragState.validY !== null) {
-        placePiece(dragState.index, dragState.validX, dragState.validY);
+        if (dragState.validX !== null && dragState.validY !== null) {
+            placePiece(dragState.index, dragState.validX, dragState.validY);
+        }
     }
+
     dragState = null;
 }
 
@@ -246,7 +284,6 @@ function drawHighlights(piece, startX, startY) {
 function placePiece(index, startX, startY) {
     let piece = currentPieces[index];
     
-    // Place physically on logic board
     for(let r=0; r<piece.length; r++) {
         for(let c=0; c<piece[0].length; c++) {
             if(piece[r][c]) board[startY + r][startX + c] = 1;
@@ -255,33 +292,41 @@ function placePiece(index, startX, startY) {
     
     currentPieces[index] = null;
     moves++;
-    
-    updateScore(piece.flat().filter(x => x===1).length); // points for placement
+    updateScore(piece.flat().filter(x => x===1).length); 
     drawBoard();
     drawTray();
-
     processTurn();
 }
 
 function processTurn() {
-    // Check Bomb Explosions
     let bombExploded = false;
+    let bombEl = null;
+
     for(let y=0; y<BOARD_SIZE; y++) {
         for(let x=0; x<BOARD_SIZE; x++) {
             if (typeof board[y][x] === 'object') {
                 board[y][x].timer--;
-                if (board[y][x].timer <= 0) bombExploded = true;
+                if (board[y][x].timer <= 0) {
+                    bombExploded = true;
+                    bombEl = document.getElementById(`cell-${x}-${y}`);
+                }
             }
         }
     }
 
     if (bombExploded) {
-        drawBoard(); // Show zero
-        setTimeout(() => endGame(), 300);
+        drawBoard(); 
+        // Trigger Explosion Effects
+        document.body.classList.add('shake');
+        if (bombEl) bombEl.classList.add('exploding');
+        
+        setTimeout(() => {
+            document.body.classList.remove('shake');
+            endGame();
+        }, 1000); // Wait for explosion animation
         return;
     }
 
-    // Check Lines & Animate
     let rowsToClear = [], colsToClear = [];
 
     for(let y=0; y<BOARD_SIZE; y++) {
@@ -296,20 +341,17 @@ function processTurn() {
     }
 
     if (rowsToClear.length > 0 || colsToClear.length > 0) {
-        // Step 1: Animation Class Trigger
         rowsToClear.forEach(y => { for(let x=0; x<BOARD_SIZE; x++) document.getElementById(`cell-${x}-${y}`).classList.add('clearing'); });
         colsToClear.forEach(x => { for(let y=0; y<BOARD_SIZE; y++) document.getElementById(`cell-${x}-${y}`).classList.add('clearing'); });
 
-        // Step 2: Timeout for logical clearing
         setTimeout(() => {
             rowsToClear.forEach(y => { for(let x=0; x<BOARD_SIZE; x++) board[y][x] = 0; });
             colsToClear.forEach(x => { for(let y=0; y<BOARD_SIZE; y++) board[y][x] = 0; });
             
             let linesCleared = rowsToClear.length + colsToClear.length;
             updateScore((linesCleared * 10) + (linesCleared > 1 ? 10 : 0));
-            
             finishTurnEvents();
-        }, 300); // 300ms matches CSS animation
+        }, 300);
     } else {
         finishTurnEvents();
     }
@@ -317,9 +359,7 @@ function processTurn() {
 
 function finishTurnEvents() {
     if (gameMode === 'bomb' && moves % 5 === 0) spawnBomb();
-    
     drawBoard();
-    
     if (currentPieces.every(p => p === null)) generatePieces();
     else checkGameOver();
 }
@@ -350,8 +390,15 @@ function checkGameOver() {
     let canMove = false;
     currentPieces.forEach(piece => {
         if (!piece) return;
-        for(let y=0; y<BOARD_SIZE; y++) {
-            for(let x=0; x<BOARD_SIZE; x++) if (canPlace(piece, x, y)) canMove = true;
+        // Test all rotations
+        let p = piece;
+        for(let r=0; r<4; r++) {
+            for(let y=0; y<BOARD_SIZE; y++) {
+                for(let x=0; x<BOARD_SIZE; x++) {
+                    if (canPlace(p, x, y)) canMove = true;
+                }
+            }
+            p = rotateMatrix(p);
         }
     });
     if (!canMove) endGame();
