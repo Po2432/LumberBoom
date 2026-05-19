@@ -34,4 +34,4 @@ LumberBoom is a responsive, web-based, wood block puzzle game featuring a classi
 
 
 ## License
-See [LICENSE.md](./LICENSE.md) for usage rights.
+See [LICENSE.md](./license.md) for usage rights.
